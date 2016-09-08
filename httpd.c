@@ -114,7 +114,7 @@ void* accept_request(void *arg)
     //下面是项目文件中htdocs文件下的文件
     sprintf(path, "htdocs%s", url); //获取文件请求路径
     if(path[strlen(path) - 1] == '/') //如果文件类型是目录(/),则加上index.html
-        strcat(path, "index.html");
+        strcat(path, "index2.html");
 
     //根据路径找文件，并获取path文件信息保存到结构体st中    
     if(stat(path, &st) == -1) //文件未找到
@@ -126,7 +126,7 @@ void* accept_request(void *arg)
     }
     else{
         if((st.st_mode & S_IFMT) == S_IFDIR) //如果是个目录，则默认使用该目录下 index.html文件
-            strcat(path, "/index.html");
+            strcat(path, "/index2.html");
 
         //判断是否是执行权限，即是否需要执行cgi程序
         if((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) 
@@ -313,7 +313,7 @@ void execute_cgi(int client, const char *path,
             sprintf(length_env, "CONTENT_LENGTH=%d", content_length);
             putenv(length_env);
         }
-        execl(path, path, NULL); //exec函数簇，执行cgi脚本，获取cgi的标准输出作为
+        execl(path, (char*)0); //exec函数簇，执行cgi脚本，获取cgi的标准输出作为
                                 //相应内容发送给客户端
                                 //通过dup2重定向，标准输出内容进入管道output的输入端
         exit(0);
@@ -475,6 +475,10 @@ int startup(u_short *port)
                                               //SOCK_STREAM 有序，可靠，双向的面向连接字节流
     if(httpd == -1)
          err_sys("socket error");
+
+    int reuse = 0;
+    if(setsockopt(httpd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+        err_sys("setsockopt error");
 
     memset(&name, 0, sizeof(name));
     name.sin_family = AF_INET;  //地址簇
