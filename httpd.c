@@ -138,6 +138,7 @@ void* accept_request(void *arg)
         else
             execute_cgi(client, path, method, query_string); //执行cgi脚本
     }
+    close(client);
     return NULL;
 }
 
@@ -159,10 +160,10 @@ void bad_request(int client)
     sprintf(buf, "\r\n");
     send(client, buf, sizeof(buf), 0);
 
-    sprintf(buf, "<P>Your browser sent a bad request");
+    sprintf(buf, "<P>Your browser sent a bad request, ");
     send(client, buf, sizeof(buf), 0);
 
-    sprintf(buf, "Such as a POST without a Content-Length.\r\n");
+    sprintf(buf, "such as a POST without a Content-Length.\r\n");
     send(client, buf, sizeof(buf), 0);
 }
 
@@ -229,6 +230,7 @@ void execute_cgi(int client, const char *path,
     int cgi_input[2];
     pid_t pid;
     int status;
+    int i;
     char c;
     int numchars = 1;
     int content_length = -1;
@@ -294,8 +296,8 @@ void execute_cgi(int client, const char *path,
         //复制文件描述句柄，重定向进程的标准输入和输出
         dup2(cgi_output[1], STDOUT); //标准输出重定向到output管道的写入端
         dup2(cgi_input[0], STDIN);  //标注输入重定向到input的读取端
-        close(cgi_output[1]); //关闭管道
-        close(cgi_input[0]);
+        close(cgi_output[0]); //关闭管道
+        close(cgi_input[1]);
         sprintf(meth_env, "REQUEST_METHOD=%s", method);
         putenv(meth_env); //用来改变或者增加环境变量的内容
         
@@ -417,10 +419,13 @@ void not_found(int client)
     sprintf(buf, "Content-Type: text/html\r\n");
     send(client, buf, strlen(buf), 0);
     
+    sprintf(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
+
     sprintf(buf, "<HTML><TITLE>Not Found</TITLE>\r\n");
     send(client, buf, strlen(buf), 0);
 
-    sprintf(buf, "<BODY><P>The serverr could not fulfill\r\n");
+    sprintf(buf, "<BODY><P>The server could not fulfill\r\n");
     send(client, buf, strlen(buf), 0);
     
     sprintf(buf, "your request because the resource specified\r\n");
@@ -475,7 +480,7 @@ int startup(u_short *port)
     name.sin_family = AF_INET;  //地址簇
     name.sin_port = htons(*port); //指定端口
     name.sin_addr.s_addr = htonl(INADDR_ANY);  //通配地址
-    if(bind(httpd, (struct sockaddr *)&name, sizeof(name)) == -1)  //绑定到指定地址和端口
+    if(bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)  //绑定到指定地址和端口
         err_sys("bind error");
 
     if(*port == 0)  //动态分配一个端口
@@ -506,6 +511,9 @@ void unimplemented(int client)
     sprintf(buf, "Content-Type: text/html\r\n");
     send(client, buf, strlen(buf), 0);
     
+    sprintf(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
+
     sprintf(buf, "<HTML><HEAD><TITLE>Method Not Implemented\r\n");
     send(client, buf, strlen(buf), 0);
 
