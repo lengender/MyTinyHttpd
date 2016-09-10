@@ -469,6 +469,7 @@ void serve_file(int client, const char *filename)
 int startup(u_short *port)
 {
     int httpd = 0;
+    int reuse = 1;
     struct sockaddr_in name;
 
     httpd = socket(PF_INET, SOCK_STREAM, 0);  //PF_INET同AF_INET, IPv4网域。　
@@ -476,7 +477,6 @@ int startup(u_short *port)
     if(httpd == -1)
          err_sys("socket error");
 
-    int reuse = 0;
     if(setsockopt(httpd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
         err_sys("setsockopt error");
 
@@ -509,7 +509,7 @@ void unimplemented(int client)
     sprintf(buf, "HTTP/1.0 501 Method Not Implemented\r\n");
     send(client, buf, strlen(buf), 0);
 
-    sprintf(buf, SERVER_STRING);
+    /*sprintf(buf, SERVER_STRING);
     send(client, buf, strlen(buf), 0);
 
     sprintf(buf, "Content-Type: text/html\r\n");
@@ -528,7 +528,7 @@ void unimplemented(int client)
     send(client, buf, strlen(buf), 0);
 
     sprintf(buf, "</BODY></HTML>\r\n");
-    send(client, buf, strlen(buf), 0);
+    send(client, buf, strlen(buf), 0);*/
 }
 
 int main()
